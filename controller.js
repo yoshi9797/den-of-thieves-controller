@@ -31,7 +31,7 @@
         var roomCode = document.getElementById("room-code").value.trim().toUpperCase();
         
         // Query your free public database for where the Steam host is hiding
-        fetch(`https://your-game-db-default-rtdb.firebaseio.com/rooms/${roomCode}.json`)
+        fetch(`https://https://den-of-thieves-bridge-default-rtdb.firebaseio.com/rooms/${roomCode}.json`)
         .then(response => response.json())
         .then(roomData => {
             if (!roomData || !roomData.host_active) {
