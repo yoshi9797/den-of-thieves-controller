@@ -33,8 +33,7 @@ function connectToLobby() {
     
     roomRef.once('value').then((snapshot) => {
         const roomData = snapshot.val();
-        updateStatus(roomData.host_active);
-
+        updateStatus(JSON.stringify(snapshot))
         if (!roomData || !roomData.host_active) {
             // updateStatus("Room not found! Check the host monitor.");
             return;
