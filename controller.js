@@ -44,7 +44,7 @@ function connectToLobby() {
 }
 
 function setupWebRTCPeer(roomRef, playerName) {
-    updateStatus("Connecting directly to game host...");
+    updateStatus("Connecting directly to game host..." + roomRef + "  " + playerName);
     
     // Use free public STUN servers so firewalls don't block the phone
     peerConnection = new RTCPeerConnection({
