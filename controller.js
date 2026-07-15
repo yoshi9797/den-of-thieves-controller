@@ -76,8 +76,8 @@ function setupWebRTCPeer(roomRef, playerName) {
             name: playerName,
             offer: JSON.stringify(peerConnection.localDescription)
         });
-        print(`players/${myPeerId}`)
     });
+    updateStatus(`players/${myPeerId}`)
 
     // Listen for the host PC's WebRTC response ("Answer")
     roomRef.child(`players/${myPeerId}/answer`).on('value', (snapshot) => {
