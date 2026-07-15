@@ -1,7 +1,7 @@
 // --- 1. FIREBASE CONFIGURATION ---
 // Paste your actual config object found in the Firebase Console settings
 const firebaseConfig = {
-    apiKey: "AIzaSyYourKeyHere...",
+    apiKey: "AIzaSyAKGgBoLeUcsoEwA9u6f3RdvxJYRwKID0g",
     databaseURL: "https://den-of-thieves-bridge-default-rtdb.firebaseio.com",
     projectId: "den-of-thieves-bridge"
 };
