@@ -44,7 +44,7 @@ function connectToLobby() {
 }
 
 function setupWebRTCPeer(roomRef, playerName) {
-    updateStatus("zConnecting directly to game host..." + roomRef + "  " + playerName);
+    updateStatus("Connecting directly to game host..." + roomRef + "  " + playerName);
     
     // Use free public STUN servers so firewalls don't block the phone
     peerConnection = new RTCPeerConnection({
@@ -77,7 +77,7 @@ function setupWebRTCPeer(roomRef, playerName) {
             offer: JSON.stringify(peerConnection.localDescription)
         });
     });
-    updateStatus(`players/${myPeerId}`)
+    myPeerId = Math.floor(Math.random() * 100000) + 2; // Unique Player ID (2+)
 
     // Listen for the host PC's WebRTC response ("Answer")
     roomRef.child(`players/${myPeerId}/answer`).on('value', (snapshot) => {
