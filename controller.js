@@ -68,16 +68,15 @@ function setupWebRTCPeer(roomRef, playerName) {
     };
 
     // Create the WebRTC Connection "Offer" to hand to the host
-    const sessionData = {
-            type: rtcPeerConnection.localDescription.type, // "offer"
-            sdp: rtcPeerConnection.localDescription.sdp    // The long cryptographic string
-        };
-
-        const offerPayload = {
+    peerConnection.createOffer().then((offer) => {
+        return peerConnection.setLocalDescription(offer);
+    }).then(() => {
+        // Upload our mobile phone's handshake signal directly into the room's database slot
+        roomRef.child(`players/${myPeerId}`).set({
             name: playerName,
-            // 2. Stringify only the sessionData, NOT the whole connection object
-            offer: JSON.stringify(sessionData) 
-        };
+            offer: JSON.stringify(peerConnection.localDescription)
+        });
+    });
 
     // Listen for the host PC's WebRTC response ("Answer")
     roomRef.child(`players/${myPeerId}/answer`).on('value', (snapshot) => {
