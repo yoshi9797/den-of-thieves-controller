@@ -81,7 +81,6 @@ function setupWebRTCPeer(roomRef, playerName) {
 
     // Listen for the host PC's WebRTC response ("Answer")
     roomRef.child(`players/${myPeerId}/answer`).on('value', (snapshot) => {
-        print("Players")
         const answer = snapshot.val();
         if (answer && peerConnection.signalingState !== "stable") {
             peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(answer)));
