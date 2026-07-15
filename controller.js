@@ -34,7 +34,7 @@ function connectToLobby() {
     roomRef.once('value').then((snapshot) => {
         const roomData = snapshot.val();
         if (!roomData || !roomData.host_active) {
-            updateStatus(roomdata);
+            updateStatus(roomData);
             return;
         }
 
