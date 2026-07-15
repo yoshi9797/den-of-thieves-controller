@@ -79,18 +79,9 @@ function setupWebRTCPeer(roomRef, playerName) {
             offer: JSON.stringify(sessionData) 
         };
 
-    // peerConnection.createOffer().then((offer) => {
-    //     return peerConnection.setLocalDescription(offer);
-    // }).then(() => {
-    //     // Upload our mobile phone's handshake signal directly into the room's database slot
-    //     roomRef.child(`players/${myPeerId}`).set({
-    //         name: playerName,
-    //         offer: JSON.stringify(peerConnection.localDescription)
-    //     });
-    // });
-
     // Listen for the host PC's WebRTC response ("Answer")
     roomRef.child(`players/${myPeerId}/answer`).on('value', (snapshot) => {
+        print("Players")
         const answer = snapshot.val();
         if (answer && peerConnection.signalingState !== "stable") {
             peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(answer)));
