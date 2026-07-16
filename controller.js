@@ -78,6 +78,7 @@ function setupWebRTCPeer(roomRef, playerName) {
         });
     });
     myPeerId = Math.floor(Math.random() * 100000) + 2; // Unique Player ID (2+)
+    updateStatus("Waiting for the Host to respond!")
 
     // Listen for the host PC's WebRTC response ("Answer")
     roomRef.child(`players/${myPeerId}/answer`).on('value', (snapshot) => {
@@ -90,7 +91,6 @@ function setupWebRTCPeer(roomRef, playerName) {
 
 // --- 4. STREAM CONTROLLER ACTIONS TO GODOT ENGINE ---
 function sendInput(actionName, value) {
-    updateStatus("Sending")
     if (dataChannel && dataChannel.readyState === "open") {
         const packet = JSON.stringify({
             peer_id: myPeerId,
