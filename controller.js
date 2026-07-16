@@ -41,31 +41,45 @@ async function handleJoinRequest(event) {
     event.preventDefault();
     roomCode = document.getElementById("room-input").value.trim().toUpperCase();
     const playerName = document.getElementById("name-input").value.trim() || "Sneaky Thief";
+    const errorBanner = document.getElementById("error-msg");
+
+    // Hide any previous error messages
+    errorBanner.style.display = "none";
 
     if (!roomCode || roomCode.length !== 4) {
-        alert("Please enter a valid 4-character room code.");
+        errorBanner.innerText = "Invalid Lobby Code Length!";
+        errorBanner.style.display = "block";
         return;
     }
 
-    updateUIVisibility("connecting");
-
     try {
+        // 🌟 STEP 1: VALIDATION CHECK (Verify Room Metadata Exists)
+        const roomCheckResponse = await fetch(`${firebaseConfig.databaseURL}/rooms/${roomCode}/room_metadata.json`);
+        const roomMetadata = await roomCheckResponse.json();
+
+        // If Firebase returns null, it means the room code does not exist
+        if (!roomMetadata) {
+            errorBanner.innerText = "Lobby Code Not Found!";
+            errorBanner.style.display = "block";
+            return;
+        }
+
+        // 🌟 STEP 2: PROCEED WITH CONNECTION (If Room Is Valid)
+        updateUIVisibility("connecting");
+
         peerConnection = new RTCPeerConnection(STUN_CONFIGURATION);
 
-        // Open binary data pipeline before building our cryptographic proposal payload
         dataChannel = peerConnection.createDataChannel("game_controls", {
-            ordered: true // Enforces strict arrival order for gamepad commands
+            ordered: true
         });
         setupDataChannelSignals(dataChannel);
 
-        // Gather network routes asynchronously
         peerConnection.onicecandidate = (e) => {
             if (e.candidate) {
                 uploadLocalCandidateToFirebase(e.candidate);
             }
         };
 
-        // Create the connection proposal (Offer SDP)
         const localOffer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(localOffer);
 
@@ -77,7 +91,6 @@ async function handleJoinRequest(event) {
             }
         };
 
-        // Pushing directly to your official default Realtime Database bucket
         const response = await fetch(`${firebaseConfig.databaseURL}/rooms/${roomCode}/players/${playerId}.json`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -87,12 +100,12 @@ async function handleJoinRequest(event) {
         if (!response.ok) throw new Error("Database directory allocation failed.");
         console.log("Registration successfully uploaded to active Firebase buffer lanes.");
 
-        // Monitor the database for Summer Engine's generated Answer SDP string
         startFirebaseAnswerPolling();
 
     } catch (err) {
         console.error("Handshake initialization failure:", err);
-        alert("Could not connect to the room. Verify room code.");
+        errorBanner.innerText = "Network Error. Try Again.";
+        errorBanner.style.display = "block";
         updateUIVisibility("lobby");
     }
 }
