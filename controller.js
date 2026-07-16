@@ -90,6 +90,7 @@ function setupWebRTCPeer(roomRef, playerName) {
 
 // --- 4. STREAM CONTROLLER ACTIONS TO GODOT ENGINE ---
 function sendInput(actionName, value) {
+    updateStatus("Sending")
     if (dataChannel && dataChannel.readyState === "open") {
         const packet = JSON.stringify({
             peer_id: myPeerId,
