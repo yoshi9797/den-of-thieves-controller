@@ -3,34 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Gamepad Controller</title>
+    <title>Blink and Lose: Den of Thieves - Controller</title>
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Include the Core Firebase SDK and Realtime Database directly from CDN -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
-    <!-- LOBBY LOGIN SCREEN -->
-    <div id="login-screen" class="view">
-        <h2>Blink and Lose</h2>
-        <input type="text" id="player-name" placeholder="Enter Name" maxlength="12">
-        <input type="text" id="room-code" placeholder="4-Letter Code" maxlength="4">
-        <button id="join-btn" onclick="connectToLobby()">JOIN GAME</button>
-        <p id="status-text">Disconnected</p>
-    </div>
+    <main class="controller-container">
 
-    <!-- GAMEPAD GAMEPLAY SCREEN -->
-    <div id="gamepad-screen" class="view hidden">
-        <div id="d-pad">
-            <button class="btn" ontouchstart="sendInput('move_left', true)" ontouchend="sendInput('move_left', false)">◀</button>
-            <button class="btn" ontouchstart="sendInput('move_right', true)" ontouchend="sendInput('move_right', false)">▶</button>
-        </div>
-        <div id="action-buttons">
-            <button class="btn action-btn" ontouchstart="sendInput('action_steal', true)" ontouchend="sendInput('action_steal', false)">STEAL</button>
-        </div>
-    </div>
+        <section id="lobby-screen" class="window-view">
+            <header class="branding">
+                <h1>DEN OF THIEVES</h1>
+                <p class="subtitle">Companion Controller Interface</p>
+            </header>
+
+            <form id="join-form" class="auth-form">
+                <div class="input-group">
+                    <label for="room-input">Room Code</label>
+                    <input 
+                        type="text" 
+                        id="room-input" 
+                        placeholder="XJFK" 
+                        maxlength="4" 
+                        autocomplete="off" 
+                        required
+                    >
+                </div>
+
+                <div class="input-group">
+                    <label for="name-input">Thief Alias</label>
+                    <input 
+                        type="text" 
+                        id="name-input" 
+                        placeholder="Enter Name" 
+                        maxlength="16" 
+                        autocomplete="off"
+                    >
+                </div>
+
+                <button type="submit" class="submit-btn">Infiltrate Session</button>
+            </form>
+        </section>
+
+
+        <section id="connecting-screen" class="window-view" style="display: none;">
+            <div class="loader-layout">
+                <div class="spinner"></div>
+                <h2>Securing Network Tunnel...</h2>
+                <p>Establishing low-latency direct pipeline. Syncing handshake metadata frames with the host board game.</p>
+            </div>
+        </section>
+
+
+        <section id="gamepad-screen" class="window-view" style="display: none;">
+            <div class="gamepad-layout">
+                
+                <div class="action-row">
+                    <button class="game-btn accept" data-action="accept_move">
+                        <span class="btn-label">Accept Move</span>
+                    </button>
+                </div>
+
+                <div class="action-row">
+                    <button class="game-btn cheat" data-action="cheat">
+                        <span class="btn-label">Commit Cheat</span>
+                    </button>
+                </div>
+
+                <div class="voting-row">
+                    <button class="game-btn vote" data-action="vote_guilty">
+                        <span class="btn-label">Guilty</span>
+                    </button>
+                    <button class="game-btn vote" data-action="vote_innocent">
+                        <span class="btn-label">Innocent</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
 
     <script src="controller.js"></script>
 </body>
