@@ -1,112 +1,212 @@
-// --- 1. FIREBASE CONFIGURATION ---
-// Paste your actual config object found in the Firebase Console settings
+// --- OFFICIAL project CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyAKGgBoLeUcsoEwA9u6f3RdvxJYRwKID0g",
     databaseURL: "https://den-of-thieves-bridge-default-rtdb.firebaseio.com",
     projectId: "den-of-thieves-bridge"
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+const STUN_CONFIGURATION = {
+    iceServers: [
+        { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }
+    ]
+};
 
-// --- 2. WEBRTC NETWORKING VARIABLES ---
+// --- CLIENT STATE VARIABLES ---
+let roomCode = "";
+let playerId = "";
 let peerConnection = null;
 let dataChannel = null;
-let roomCode = "";
-let myPeerId = Math.floor(Math.random() * 100000) + 2; // Unique Player ID (2+)
+let pollingInterval = null;
 
-// --- 3. CONNECT TO STEAM HOST VIA CLOUD ROOM CODE ---
-function connectToLobby() {
-    roomCode = document.getElementById("room-code").value.trim().toUpperCase();
-    const name = document.getElementById("player-name").value.trim();
-    
-    if (roomCode.length !== 4 || !name) {
-        updateStatus("Enter a valid name and 4-letter room code.");
+// --- INITIALIZE EVENT HANDLING LAYER ---
+window.addEventListener("DOMContentLoaded", () => {
+    // Unique device session token initialization
+    playerId = "client_" + Math.random().toString(36).substring(2, 9) + Date.now().toString().substring(7);
+    console.log("Device unique session initialized:", playerId);
+
+    // Dynamic parameter sniffing from companion QR URLs
+    const urlParams = new URLSearchParams(window.location.search);
+    const scannedRoom = urlParams.get("room");
+    if (scannedRoom) {
+        document.getElementById("room-input").value = scannedRoom.toUpperCase();
+    }
+
+    document.getElementById("join-form").addEventListener("submit", handleJoinRequest);
+});
+
+/**
+ * Executes authorization requests and runs local WebRTC allocation blocks.
+ */
+async function handleJoinRequest(event) {
+    event.preventDefault();
+    roomCode = document.getElementById("room-input").value.trim().toUpperCase();
+    const playerName = document.getElementById("name-input").value.trim() || "Sneaky Thief";
+
+    if (!roomCode || roomCode.length !== 4) {
+        alert("Please enter a valid 4-character room code.");
         return;
     }
 
-    updateStatus("Searching for room " + roomCode + "...");
+    updateUIVisibility("connecting");
 
-    // Query Firebase for this room's reference path
-    const roomRef = database.ref(`rooms/${roomCode}`);
-    
-    roomRef.once('value').then((snapshot) => {
-        const roomData = snapshot.val();
-        if (!roomData || !roomData.host_online) {
-            updateStatus("Room not found! Check the host monitor.");
-            return;
-        }
+    try {
+        peerConnection = new RTCPeerConnection(STUN_CONFIGURATION);
 
-        // Initialize WebRTC
-        setupWebRTCPeer(roomRef, name);
-    });
-}
+        // Open binary data pipeline before building our cryptographic proposal payload
+        dataChannel = peerConnection.createDataChannel("game_controls", {
+            ordered: true // Enforces strict arrival order for gamepad commands
+        });
+        setupDataChannelSignals(dataChannel);
 
-function setupWebRTCPeer(roomRef, playerName) {
-    updateStatus("Connecting directly to game host..." + roomRef + "  " + playerName);
-    
-    // Use free public STUN servers so firewalls don't block the phone
-    peerConnection = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-    });
+        // Gather network routes asynchronously
+        peerConnection.onicecandidate = (e) => {
+            if (e.candidate) {
+                uploadLocalCandidateToFirebase(e.candidate);
+            }
+        };
 
-    // Create the high-speed data transmission channel
-    dataChannel = peerConnection.createDataChannel("game-inputs", { ordered: false });
+        // Create the connection proposal (Offer SDP)
+        const localOffer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(localOffer);
 
-    dataChannel.onopen = () => {
-        updateStatus("Connected!");
-        document.getElementById("login-screen").classList.add("hidden");
-        document.getElementById("gamepad-screen").classList.remove("hidden");
-        
-        // Send introduction handshake packet
-        sendInput("player_join", playerName);
-    };
-
-    dataChannel.onclose = () => {
-        resetToLogin("Disconnected from game session.");
-    };
-
-    // Create the WebRTC Connection "Offer" to hand to the host
-    peerConnection.createOffer().then((offer) => {
-        return peerConnection.setLocalDescription(offer);
-    }).then(() => {
-        // Upload our mobile phone's handshake signal directly into the room's database slot
-        roomRef.child(`players/${myPeerId}`).set({
+        const registrationPayload = {
             name: playerName,
-            offer: JSON.stringify(peerConnection.localDescription)
-        });
-    });
-    myPeerId = Math.floor(Math.random() * 100000) + 2; // Unique Player ID (2+)
-    updateStatus("Waiting for the Host to respond!")
+            offer: {
+                type: localOffer.type,
+                sdp: localOffer.sdp
+            }
+        };
 
-    // Listen for the host PC's WebRTC response ("Answer")
-    roomRef.child(`players/${myPeerId}/answer`).on('value', (snapshot) => {
-        const answer = snapshot.val();
-        if (answer && peerConnection.signalingState !== "stable") {
-            peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(answer)));
-        }
-    });
-}
-
-// --- 4. STREAM CONTROLLER ACTIONS TO GODOT ENGINE ---
-function sendInput(actionName, value) {
-    if (dataChannel && dataChannel.readyState === "open") {
-        const packet = JSON.stringify({
-            peer_id: myPeerId,
-            action: actionName,
-            pressed: value
+        // Pushing directly to your official default Realtime Database bucket
+        const response = await fetch(`${firebaseConfig.databaseURL}/rooms/${roomCode}/players/${playerId}.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(registrationPayload)
         });
-        dataChannel.send(packet);
+
+        if (!response.ok) throw new Error("Database directory allocation failed.");
+        console.log("Registration successfully uploaded to active Firebase buffer lanes.");
+
+        // Monitor the database for Summer Engine's generated Answer SDP string
+        startFirebaseAnswerPolling();
+
+    } catch (err) {
+        console.error("Handshake initialization failure:", err);
+        alert("Could not connect to the room. Verify room code.");
+        updateUIVisibility("lobby");
     }
 }
 
-function updateStatus(msg) {
-    document.getElementById("status-text").textContent = msg;
+/**
+ * Handles WebRTC data channel events.
+ */
+function setupDataChannelSignals(channel) {
+    channel.onopen = () => {
+        console.log("⚡ P2P Direct Transit Pipe Established! Firebase signaling can drop out.");
+        clearInterval(pollingInterval); // Stop polling cloud database nodes
+        updateUIVisibility("gamepad");
+        bindGamepadInputs();
+    };
+
+    channel.onclose = () => {
+        console.log("Connection severed cleanly by host boundary layers.");
+        handleGracefulShutdown();
+    };
 }
 
-function resetToLogin(msg) {
-    document.getElementById("login-screen").classList.remove("hidden");
-    document.getElementById("gamepad-screen").classList.add("hidden");
-    updateStatus(msg);
+/**
+ * Poll-checking loop parsing the explicit player child directory.
+ */
+function startFirebaseAnswerPolling() {
+    pollingInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`${firebaseConfig.databaseURL}/rooms/${roomCode}/players/${playerId}/answer.json`);
+            const answerData = await res.json();
+
+            if (answerData && answerData.sdp) {
+                clearInterval(pollingInterval);
+                console.log("Answer SDP compiled from Godot host received.");
+                
+                // Finalize local handshake tracking values
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answerData));
+            }
+        } catch (e) {
+            console.error("Error checking answer loops:", e);
+        }
+    }, 1500);
 }
+
+/**
+ * Posts local ICE candidate pathways sequentially into an array structure.
+ */
+async function uploadLocalCandidateToFirebase(candidate) {
+    if (!roomCode || !playerId) return;
+    
+    const payload = {
+        media: candidate.sdpMid,
+        index: candidate.sdpMLineIndex,
+        name: candidate.candidate
+    };
+
+    try {
+        await fetch(`${firebaseConfig.databaseURL}/rooms/${roomCode}/players/${playerId}/caller_candidates.json`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.error("Failed uploading candidate:", e);
+    }
+}
+
+/**
+ * Maps screen interaction updates to real-time WebRTC string packages.
+ */
+function bindGamepadInputs() {
+    const inputButtons = document.querySelectorAll(".game-btn");
+    
+    inputButtons.forEach(button => {
+        const actionName = button.getAttribute("data-action");
+
+        const sendInput = (state) => {
+            if (dataChannel && dataChannel.readyState === "open") {
+                const payload = {
+                    type: "input",
+                    button: actionName,
+                    state: state // "pressed" or "released"
+                };
+                dataChannel.send(JSON.stringify(payload));
+            }
+        };
+
+        // Parallel mapping handling mobile touch arrays alongside testing desktops
+        button.addEventListener("touchstart", (e) => { e.preventDefault(); sendInput("pressed"); });
+        button.addEventListener("touchend", (e) => { e.preventDefault(); sendInput("released"); });
+        button.addEventListener("mousedown", () => sendInput("pressed"));
+        button.addEventListener("mouseup", () => sendInput("released"));
+    });
+}
+
+/**
+ * Document view display management module.
+ */
+function updateUIVisibility(state) {
+    document.getElementById("lobby-screen").style.display = state === "lobby" ? "block" : "none";
+    document.getElementById("connecting-screen").style.display = state === "connecting" ? "block" : "none";
+    document.getElementById("gamepad-screen").style.display = state === "gamepad" ? "block" : "none";
+}
+
+function handleGracefulShutdown() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    if (dataChannel) dataChannel.close();
+    if (peerConnection) peerConnection.close();
+    updateUIVisibility("lobby");
+    alert("Disconnected from host session.");
+}
+
+// Perform automated data removal queries if user intentionally leaves the session page
+window.addEventListener("beforeunload", () => {
+    if (roomCode && playerId) {
+        navigator.sendBeacon(`${firebaseConfig.databaseURL}/rooms/${roomCode}/players/${playerId}.json?x-http-method-override=DELETE`, "");
+    }
+});
