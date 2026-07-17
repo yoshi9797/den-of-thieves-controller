@@ -372,10 +372,34 @@
                         <span class="btn-label">Innocent</span>
                     </button>
                 </div>
-
             </div>
         </section>
 
+        <!-- SCREEN 4: THE PLAYING CARD -->
+        <div id="private-card-screen" style="display: none;">
+            <div class="card-shark-container">
+                <div class="card-front-layout">
+                    <div class="text-gutter-left">Blink And Lose</div>
+                    <div class="card-core-frame">
+                        <div id="card-graphic-icon">🎰</div>
+                        <h2 id="card-action-title">Action Title</h2>
+                        <p id="card-action-desc">Action Description rules string context goes here.</p>
+                    </div>
+                    <div class="text-gutter-right">Den Of Thieves</div>
+                </div>
+            </div>
+            
+            <div class="action-bar">
+                <button id="btn-accept-move" onclick="confirmCardExecution(false)">Execute Honestly</button>
+                <button id="btn-cheat-move" onclick="triggerSecretBluffMenu()">Bluff / Cheat</button>
+            </div>
+            
+            <div id="bluff-selection-menu" style="display: none;">
+                <h3>Select Your Counterfeit Claim:</h3>
+                <div id="bluff-options-grid"></div>
+                <button onclick="closeBluffMenu()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
     </main>
 
     <script src="controller.js"></script>
